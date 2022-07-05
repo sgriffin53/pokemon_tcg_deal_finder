@@ -120,6 +120,9 @@ while True:
             send_email(subject,message)
             print("Sent email")
             os.system("del new_deals.txt")
+            ff = open('new_deals.txt', 'w', encoding='utf-8')
+            ff.write(" ")
+            ff.close()
     if i % 2 == 0:
         print("sleeping")
         time.sleep(60*10)
