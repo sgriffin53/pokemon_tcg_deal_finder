@@ -15,13 +15,13 @@ def send_email(subject, message):
     api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
     subject = subject
     html_content = message
-    sender = {"name":"Steve Griffin","email":"sgriffin53@gmail.com"}
-    to = [{"email":"sgriffin53@gmail.com","name":"Steven Griffin"}]
+    sender = {"name":"name","email":"name"}
+    to = [{"email":"name@gmail.com","name":"name"}]
     #cc = [{"email":"example2@example2.com","name":"Janice Doe"}]
     cc = None
     #bcc = [{"name":"John Doe","email":"example@example.com"}]
     bcc = None
-    reply_to = {"email":"sgriffin53@gmail.com","name":"Steven Griffin"}
+    reply_to = {"email":"name","name":"name"}
     #headers = {"Some-Custom-Name":"unique-id-1234"}
     params = None
     headers = None
