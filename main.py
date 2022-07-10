@@ -19,6 +19,8 @@ class Value:
         self.name = ""
         self.set = None
         self.ungraded = None
+        self.psa7 = None
+        self.psa8 = None
         self.psa9 = None
         self.psa10 = None
 
@@ -44,7 +46,7 @@ def listing_exists(listings, in_listing):
             return True
     else: return False
 
-def get_card_info(title, values, set):
+def get_card_info(title, values, set, no_matches):
     title = title.replace("&39;", "")
     title = title.replace("'", "")
     best_match = None
@@ -54,61 +56,179 @@ def get_card_info(title, values, set):
         name = name.replace("'", "")
         name = name.replace("&39;","")
         name_split = name.split(" ")
-        name_split.append(value.set)
+        num_in_name = False
+        for word in name_split:
+            if word.isnumeric():
+                num_in_name = True
+        if not num_in_name:
+            name_split.append(value.set)
+        #name_split.append(value.set)
         #print("matching:", title, name)
         match = True
         for word in name_split:
+            #if "kangaskhan" in name.lower(): print("before", name, word, match)
             if word.lower == "pack": continue
+            if word.lower == "shadowless": continue
+            if word.lower == "pokemon": continue
+            if value.set in name_split:
+                if word.isnumeric() and word.lower() not in title.lower():
+                    found_slash = False
+                    if "/" in title: found_slash = True
+                    if "#" in title: found_slash = True
+                    if not found_slash: continue
             if word.lower() not in title.lower():
                 match = False
             if word.isnumeric():
                 search_str = word + "/"
-                if search_str not in title:
+                search_str2 = word + " /"
+                search_str3 = "#" + word
+                search_str4 = "no" + word
+                if search_str not in title and search_str2 not in title and search_str3 not in title and search_str4 not in title:
                     match = False
-        if "base" not in title.lower() and "jungle" not in title.lower() and "fossil" not in title.lower() and "rocket" not in title.lower() and "heroes" not in title.lower() and "genesis" not in title.lower(): match = False
+        if "base" not in title.lower() and "jungle" not in title.lower() and "fossil" not in title.lower() and "rocket" not in title.lower() \
+                and "heroes" not in title.lower() and "neo" not in title.lower() and "challenge" not in title.lower():
+            match = False
+            pass
         if match:
             if len(name_split) > best_count:
                 best_match = value
                 best_count = len(name_split)
+    #if best_match == None:
+     #   print(title)
     return best_match
+
+def get_all_values(url):
+    exchange_rate = 0.83
+    values = []
+    for page_num in range(1,10):
+        cursor_val = str( (page_num - 1) * 50)
+        myobj = {'sort': 'highest-price',
+                 'cursor': cursor_val
+        }
+        page = requests.post(url, myobj)
+        page_text = page.text
+        page_text_split = page_text.split("<td class=\"title\" title=")
+        for item in page_text_split:
+            item_split = item.split("</td>")
+            if (len(item_split)) < 2: continue
+            name = item_split[0].split(">")[2].split("<")[0].replace("\n","").strip()
+            ungraded_price = None
+            psa9_price = None
+            psa10_price = None
+            if len(item_split) >= 2 and len(item_split[1].split(">")) >= 3: ungraded_price = item_split[1].split(">")[2].split("<")[0].replace("\n","").strip()
+            if len(item_split) >= 3 and len(item_split[2].split(">")) >= 3: psa9_price = item_split[2].split(">")[2].split("<")[0].replace("\n","").strip()
+            if len(item_split) >= 4 and len(item_split[3].split(">")) >= 3: psa10_price = item_split[3].split(">")[2].split("<")[0].replace("\n","").strip()
+            if ungraded_price == "": ungraded_price = None
+            if psa9_price == "": psa9_price = None
+            if psa10_price == "": psa10_price = None
+            if ungraded_price != None: ungraded_price = float(ungraded_price.replace("$", "").replace(",", ""))
+            if psa9_price != None: psa9_price = float(psa9_price.replace("$", "").replace(",", ""))
+            if psa10_price != None: psa10_price = float(psa10_price.replace("$", "").replace(",", ""))
+            value = Value()
+            value.set = "base"
+            if "jungle" in url: value.set = "jungle"
+            if "fossil" in url: value.set = "fossil"
+            if "rocket" in url: value.set = "team rocket"
+            if "heroes" in url: value.set = "gym heroes"
+            if "neo-genesis" in url: value.set = "neo genesis"
+            if "gym-challenge" in url: value.set = "gym challenge"
+            if "neo-discovery" in url: value.set = "neo discovery"
+            if "neo-revelation" in url: value.set = "neo revelation"
+            if "neo-destiny" in url: value.set = "neo destiny"
+            value.name = name
+            num_in_name = False
+            for word in value.name.replace("#", "").split(" "):
+                #if "Charizard" in name: print(word)
+                if word.isnumeric():
+                    num_in_name = True
+                 #   if "Charizard" in name: print(word)
+            if not num_in_name: value.name = name
+            value.ungraded = ungraded_price
+            value.psa9 = psa9_price
+            value.psa10 = psa10_price
+            if value.ungraded != None: value.ungraded *= exchange_rate
+            if value.psa9 != None: value.psa9 *= exchange_rate
+            if value.psa10 != None: value.psa10 *= exchange_rate
+            if value.name == "": continue
+            value.name = value.set + " " + value.name
+            in_range = True
+            if in_range:
+                if (len(value.name.split(" "))) >= 2: values.append(value)
+    return values
 
 def get_values(url):
     exchange_rate = 0.83
-    page = requests.get(url)
-    page_text = page.text
-    page_text_split = page_text.split("<td class=\"title\" title=")
+    print(url)
     values = []
-    for item in page_text_split:
-        item_split = item.split("</td>")
-        if (len(item_split)) < 2: continue
-        name = item_split[0].split(">")[2].split("<")[0].replace("\n","").strip()
-        ungraded_price = item_split[1].split(">")[2].split("<")[0].replace("\n","").strip()
-        psa9_price = item_split[2].split(">")[2].split("<")[0].replace("\n","").strip()
-        psa10_price = item_split[3].split(">")[2].split("<")[0].replace("\n","").strip()
-        if ungraded_price == "": ungraded_price = None
-        if psa9_price == "": psa9_price = None
-        if psa10_price == "": psa10_price = None
-        if ungraded_price != None: ungraded_price = float(ungraded_price.replace("$", "").replace(",", ""))
-        if psa9_price != None: psa9_price = float(psa9_price.replace("$", "").replace(",", ""))
-        if psa10_price != None: psa10_price = float(psa10_price.replace("$", "").replace(",", ""))
-        value = Value()
-        value.set = "base"
-        if "jungle" in url: value.set = "jungle"
-        if "fossil" in url: value.set = "fossil"
-        if "rocket" in url: value.set = "team rocket"
-        if "heroes" in url: value.set = "gym heroes"
-        if "genesis" in url: value.set = "neo genesis"
-        value.name = value.set + " " + name
-        value.ungraded = ungraded_price
-        value.psa9 = psa9_price
-        value.psa10 = psa10_price
-        if value.ungraded != None: value.ungraded *= exchange_rate
-        if value.psa9 != None: value.psa9 *= exchange_rate
-        if value.psa10 != None: value.psa10 *= exchange_rate
-        values.append(value)
+    for page_num in range(1,10):
+        cursor_val = str( (page_num - 1) * 50)
+        myobj = {'sort': 'highest-price',
+                 'cursor': cursor_val
+        }
+        page = requests.post(url, myobj)
+        page_text = page.text
+        page_text_split = page_text.split("<td class=\"title\" title=")
+        for item in page_text_split:
+            item_split = item.split("</td>")
+            if (len(item_split)) < 2: continue
+            name = item_split[0].split(">")[2].split("<")[0].replace("\n","").strip()
+            ungraded_price = None
+            psa9_price = None
+            psa10_price = None
+            if len(item_split) >= 2 and len(item_split[1].split(">")) >= 3: ungraded_price = \
+            item_split[1].split(">")[2].split("<")[0].replace("\n", "").strip()
+            if len(item_split) >= 3 and len(item_split[2].split(">")) >= 3: psa9_price = \
+            item_split[2].split(">")[2].split("<")[0].replace("\n", "").strip()
+            if len(item_split) >= 4 and len(item_split[3].split(">")) >= 3: psa10_price = \
+            item_split[3].split(">")[2].split("<")[0].replace("\n", "").strip()
+            if ungraded_price == "": ungraded_price = None
+            if psa9_price == "": psa9_price = None
+            if psa10_price == "": psa10_price = None
+            if ungraded_price != None: ungraded_price = float(ungraded_price.replace("$", "").replace(",", ""))
+            if psa9_price != None: psa9_price = float(psa9_price.replace("$", "").replace(",", ""))
+            if psa10_price != None: psa10_price = float(psa10_price.replace("$", "").replace(",", ""))
+            value = Value()
+            value.set = "base"
+            if "jungle" in url: value.set = "jungle"
+            if "fossil" in url: value.set = "fossil"
+            if "rocket" in url: value.set = "team rocket"
+            if "heroes" in url: value.set = "gym heroes"
+            if "neo-genesis" in url: value.set = "neo genesis"
+            if "gym-challenge" in url: value.set = "gym challenge"
+            if "neo-discovery" in url: value.set = "neo discovery"
+            if "neo-revelation" in url: value.set = "neo revelation"
+            if "neo-destiny" in url: value.set = "neo destiny"
+            value.name = name
+            num_in_name = False
+            for word in value.name.replace("#", "").split(" "):
+                #if "Charizard" in name: print(word)
+                if word.isnumeric():
+                    num_in_name = True
+                 #   if "Charizard" in name: print(word)
+            if not num_in_name: value.name = name
+            value.ungraded = ungraded_price
+            value.psa9 = psa9_price
+            value.psa10 = psa10_price
+            if value.ungraded != None: value.ungraded *= exchange_rate
+            if value.psa9 != None: value.psa9 *= exchange_rate
+            if value.psa10 != None: value.psa10 *= exchange_rate
+            value.name = value.set + " " + value.name
+            in_range = True
+            if (value.ungraded == None or value.ungraded < 35) \
+                and (value.psa9 == None or value.psa9 < 85) \
+                and (value.psa10 == None or value.psa10 < 135):
+                in_range = False
+            if in_range: values.append(value)
     return values
 
-def get_listings(search_terms, values, buy_it_now, quiet):
+def get_listings(search_terms, values, buy_it_now, quiet, no_matches):
+    pokemon_names = []
+    ff = open('pokemon_names.txt','r',encoding='utf-8')
+    lines = ff.readlines()
+    for pokemon in lines:
+        pokemon = pokemon.replace("\n","")
+        pokemon_names.append(pokemon)
+    ff.close()
     if buy_it_now:
         bin_on = 1 # buy it now, 0 for off, 1 for on, not true/false
         auc_on = 0 # auction, 0 for off, 1 for on, not true/false
@@ -119,8 +239,10 @@ def get_listings(search_terms, values, buy_it_now, quiet):
     listings = []
     listing_count = 0
     last_listing_count = 0
+    last_found_page = 0
     last_mins_left = -1
     start_time = time.time()
+    done_minutes = []
     for i, search_term in enumerate(search_terms):
         time_elapsed = time.time() - start_time
         if time_elapsed < 1: time_elapsed = 1
@@ -131,18 +253,25 @@ def get_listings(search_terms, values, buy_it_now, quiet):
         mins_left = int(time_left / 60)
         secs_left = int(time_left - mins_left * 60)
         if quiet:
-            if mins_left != last_mins_left:
-                print("time remaining: " + str(mins_left) + " mins " + str(secs_left) + " secs - searching: " + search_term)
-            pass
+            if mins_left not in done_minutes:
+                print("time remaining: " + str(mins_left) + " mins " + str(secs_left) + " secs - searching: " + search_term + " listings: " + str(len(listings)))
+                if i+1 >= 5: done_minutes.append(mins_left)
         else:
             print("---", search_term, i+1, "/", len(search_terms))
             print("time remaining: " + str(mins_left) + " mins " + str(secs_left) + " secs")
-        last_mins_left = mins_left
+        pokemon_name = None
+      #  print(pokemon_names)
+        for pokemon in pokemon_names:
+            if pokemon.lower() in search_term.lower().split(" "):
+                pokemon_name = pokemon.lower()
+        all_urls = []
+        duplicate_url = False
         for page_num in range(1,100):
             search_url = main_url.replace("%%%SEARCH%%%", search_term)
             search_url = search_url.replace("%%%BIN%%%", str(bin_on))
             search_url = search_url.replace("%%%AUC%%%", str(auc_on))
             new_url = search_url + "&_pgn=" + str(page_num)
+            '''
             if "base" in search_term:
                 new_url += "&Set=Base%20Set"
             if "fossil" in search_term:
@@ -150,32 +279,56 @@ def get_listings(search_terms, values, buy_it_now, quiet):
             if "jungle" in search_term:
                 new_url += "&Set=Jungle%20Set"
             if "rocket" in search_term:
-                new_url += "&Set=Team%Rocket%Set"
+                new_url += "&Set=Team%20Rocket%20Set"
             if "jungle" in search_term:
                 new_url += "&Set=Gym%20Heroes"
-            if "genesis" in search_term:
-                new_url += "&Set=Neo&Genesis"
+            if "neo genesis" in search_term:
+                new_url += "&Set=Neo%20Genesis"
+            if "gym challenge" in search_term:
+                new_url += "&Set=Gym%20Challenge"
+            if "neo discovery" in search_term:
+                new_url += "&Set=Neo%20Discovery"
+            if "neo revelation" in search_term:
+                new_url += "&Set=Neo%20Revelation"
+            if "neo destiny" in search_term:
+                new_url += "&Set=Neo%20Destiny"
+            '''
+           # if pokemon_name != None:
+           #     new_url += "&Character=" + pokemon_name.capitalize()
+            #print("--")
+            #print(search_term)
+            #print(new_url)
             page = requests.get(new_url)
             page_text = page.text.replace("<span class=LIGHT_HIGHLIGHT>New listing</span>", "")
             page_text = page_text.replace("<span class=ITALIC>","")
             page_split = page_text.split("\n")
+            from_in = False
             for i, line in enumerate(page_split):
-                if i > 1000: break
                 if "£" in line and "item__title>" in line and "item__price" in line:
                     line_split = line.split("item__link")
                     for item in line_split:
-                        if "United States" in item:
+                        if "united states" in item.lower() or "canada" in item.lower() or "australia" in item.lower():
+                            from_in = True
+                        if "United States" in item or "Canada" in item or "Australia" in item:
                             continue
                         if len(item.split("href=")) < 2: continue
                         url = item.split("href=")[1].split("><h3")[0]
+                        short_url = url.split("?")[0]
                         if len(item.split("item__title>")) <= 1: continue
                         title = item.split("item__title>")[1].split("</h3")[0]
+                        if short_url in all_urls:
+                            duplicate_url = True
+                            break
+                        else: all_urls.append(short_url)
+
+                       # print(title, all_titles)
                         excluded = ["played", "h/p", "l/p", "heavy", "spanish", "german", "french", "not holo", "non foil", "non holo",
                                     "non 1st", "not 1st", "set art", "sticker", "non-holo", "heart gold", "soul silver",
                                     "base set 2", "etc", "sword", "xy", "platinum", "diamond and pearl", "empty",
                                     "custom", "resealed", "ex legend", "sword and shield", "black &amp; white",
                                     "shop on ebay", "korean", "portuguese", "celebrations", "anniversary", "shadowless", "sun and moon",
-                                    "opened", "error"]
+                                    "opened", "error", "sun &amp; moon", "sun & moon", "champions path", "champion&amp;s path", "champion's path",
+                                    "fusion strike", "astral radiance", "roaring skies", "japanese"]
                         do_continue = False
                         for term in excluded:
                             if term in title.lower(): do_continue = True
@@ -192,8 +345,11 @@ def get_listings(search_terms, values, buy_it_now, quiet):
                         if "USD" in price: continue
                         price = float(price.replace("£","").replace(",",""))
                         listing.price = price
-                        card_info = get_card_info(title, values, "base set")
-                        if card_info == None: continue
+                        card_info = get_card_info(title, values, "base set", no_matches)
+                        #print(title, ":", card_info)
+                        if card_info == None:
+                            no_matches.append(title)
+                            continue
                         if "booster box" in card_info.name.lower(): continue
                         grade = "ungraded"
                         if "psa 9" in title.lower(): grade = "psa9"
@@ -219,7 +375,14 @@ def get_listings(search_terms, values, buy_it_now, quiet):
                         if not listing_exists(listings, listing):
                             listing_count += 1
                             listings.append(listing)
-            if last_listing_count == listing_count: break
+                            last_found_page = page_num
+            #print(title, page_num, listing_count)
+            #if "shop on ebay" in title: continue
+            if duplicate_url: break
+            if from_in: break
+            #if last_listing_count == listing_count: break
+            #print(title, page_num, listing_count)
+            #if page_num - last_found_page >= 3: break
             last_listing_count = listing_count
     return listings
 
@@ -251,7 +414,8 @@ if __name__ == "__main__" :
     search_terms.append("pokemon psa 9")
     search_terms.append("pokemon rare holo")
     search_terms.append("pokemon rare holo psa")
-    all_listings = get_listings(search_terms, all_values, buy_it_now, False)
+    no_matches = []
+    all_listings = get_listings(search_terms, all_values, buy_it_now, False, no_matches)
     all_listings.sort(key=myFunc)
     print(str(len(all_listings)) + " total listings")
     '''
