@@ -20,6 +20,7 @@ def get_value(value):
     if "neo genesis" in name: first_dir = "pokemon-neo-genesis"
     if "neo revelation" in name: first_dir = "pokemon-neo-revelation"
     if "neo discovery" in name: first_dir = "pokemon-neo-discovery"
+    if "neo destiny" in name: first_dir = "pokemon-neo-destiny"
     threshold = 0
     if "jungle" in name or "fossil" in name or "base" in name:
         threshold = 0
@@ -94,16 +95,20 @@ def get_card_value(title):
     if "neo discovery" in title.lower(): set_urls = ["https://www.pricecharting.com/console/pokemon-neo-discovery?sort=highest-price"]
     if "neo genesis" in title.lower(): set_urls = ["https://www.pricecharting.com/console/pokemon-neo-genesis?sort=highest-price"]
     if "neo revelation" in title.lower(): set_urls = ["https://www.pricecharting.com/console/pokemon-neo-revelation?sort=highest-price"]
+    if "neo destiny" in title.lower(): set_urls = ["https://www.pricecharting.com/console/pokemon-neo-destiny?sort=highest-price"]
+
     all_values = []
     values = []
     for set_url in set_urls:
         values = get_all_values(set_url)
         for value in values:
-            all_values.append(values)
+            all_values.append(value)
+    card_info = get_card_info(title,all_values, "", [])
+    return card_info
+    '''
     best_match = None
     best_count = 0
     for value in values:
-
         name = value.name.replace("[", "").replace("]", "").replace("#","")
         name = name.replace("'", "")
         name = name.replace("&39;","")
@@ -146,6 +151,7 @@ def get_card_value(title):
                 best_count = len(name_split)
     #if best_match == None:
      #   print(title)
+    '''
     return best_match
 
 def winEnumHandler( hwnd, ctx ):
