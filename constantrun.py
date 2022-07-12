@@ -2,6 +2,9 @@ from __future__ import print_function
 from main import get_values
 from main import get_listings
 from main import myFunc
+from main import get_seller_urls
+from main import get_seller_listings
+
 import os, sys
 import time
 
@@ -15,13 +18,13 @@ def send_email(subject, message):
     api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
     subject = subject
     html_content = message
-    sender = {"name":"name","email":"name"}
+    sender = {"name":"name","email":"name@gmail.com"}
     to = [{"email":"name@gmail.com","name":"name"}]
     #cc = [{"email":"example2@example2.com","name":"Janice Doe"}]
     cc = None
     #bcc = [{"name":"John Doe","email":"example@example.com"}]
     bcc = None
-    reply_to = {"email":"name","name":"name"}
+    reply_to = {"email":"name@gmail.com","name":"name"}
     #headers = {"Some-Custom-Name":"unique-id-1234"}
     params = None
     headers = None
@@ -51,16 +54,16 @@ while True:
     no_matches = []
     os.system("del out_old.txt")
     os.system("copy out.txt out_old.txt")
-    set_urls = ["https://www.pricecharting.com/console/pokemon-base-set?sort=highest-price"]
-             #  "https://www.pricecharting.com/console/pokemon-jungle?sort=highest-price",
-             #   "https://www.pricecharting.com/console/pokemon-fossil?sort=highest-price",
-             #   "https://www.pricecharting.com/console/pokemon-team-rocket?sort=highest-price",
-             #   "https://www.pricecharting.com/console/pokemon-gym-heroes?sort=highest-price",
-             #   "https://www.pricecharting.com/console/pokemon-neo-genesis?sort=highest-price",
-             #   "https://www.pricecharting.com/console/pokemon-gym-challenge?sort=highest-price",
-             #   "https://www.pricecharting.com/console/pokemon-neo-discovery?sort=highest-price",
-             #   "https://www.pricecharting.com/console/pokemon-neo-revelation?sort=highest-price",
-             #   "https://www.pricecharting.com/console/pokemon-neo-destiny?sort=highest-price"]
+    set_urls = ["https://www.pricecharting.com/console/pokemon-base-set?sort=highest-price",
+               "https://www.pricecharting.com/console/pokemon-jungle?sort=highest-price",
+                "https://www.pricecharting.com/console/pokemon-fossil?sort=highest-price",
+                "https://www.pricecharting.com/console/pokemon-team-rocket?sort=highest-price",
+                "https://www.pricecharting.com/console/pokemon-gym-heroes?sort=highest-price",
+                "https://www.pricecharting.com/console/pokemon-neo-genesis?sort=highest-price",
+                "https://www.pricecharting.com/console/pokemon-gym-challenge?sort=highest-price",
+                "https://www.pricecharting.com/console/pokemon-neo-discovery?sort=highest-price",
+                "https://www.pricecharting.com/console/pokemon-neo-revelation?sort=highest-price",
+                "https://www.pricecharting.com/console/pokemon-neo-destiny?sort=highest-price"]
     # set_urls = ["https://www.pricecharting.com/console/pokemon-neo-genesis?sort=highest-price"]
     all_values = []
     for set_url in set_urls:
@@ -89,20 +92,20 @@ while True:
         search_terms.append("pokemon " + name)
     #for pokemon in values_pokemon_names:
     #    search_terms.append("pokémon " + pokemon + " card")
-   # search_terms.append("pokemon trainer card")
-   # search_terms.append("pokemon energy card")
-   # search_terms.append("pokemon psa 10")
-   # search_terms.append("pokemon psa 9")
-   # search_terms.append("pokemon rare holo")
-   # search_terms.append("pokemon rare holo psa")
-   # search_terms.append("pokemon base")
-   # search_terms.append("pokemon jungle")
-   # search_terms.append("pokemon fossil")
-   # search_terms.append("pokemon team rocket")
-   # search_terms.append("pokemon gym heroes")
-   # search_terms.append("pokemon neo discovery")
-   # search_terms.append("pokemon neo genesis")
-   # search_terms.append("pokemon neo revelation")
+    search_terms.append("pokemon trainer card")
+    search_terms.append("pokemon energy card")
+    search_terms.append("pokemon psa 10")
+    search_terms.append("pokemon psa 9")
+    search_terms.append("pokemon rare holo")
+    search_terms.append("pokemon rare holo psa")
+    search_terms.append("pokemon base")
+    search_terms.append("pokemon jungle")
+    search_terms.append("pokemon fossil")
+    search_terms.append("pokemon team rocket")
+    search_terms.append("pokemon gym heroes")
+    search_terms.append("pokemon neo discovery")
+    search_terms.append("pokemon neo genesis")
+    search_terms.append("pokemon neo revelation")
     new_search_terms = []
     for term in search_terms:
         new_term = ""
@@ -114,6 +117,14 @@ while True:
    # search_terms = new_search_terms
     print(str(len(search_terms)) + " search terms")
     all_listings = get_listings(search_terms, all_values, buy_it_now, True, no_matches)
+    listing_urls = []
+    for listing in all_listings:
+        listing_urls.append(listing.url)
+    seller_urls = get_seller_urls(listing_urls)
+    seller_listings = get_seller_listings(seller_urls, all_values, list(all_listings))
+    all_listings = []
+    for listing in seller_listings:
+        all_listings.append(listing)
     all_listings.sort(key=myFunc)
     listing_urls = []
     for listing in all_listings:
@@ -142,7 +153,9 @@ while True:
         ff.write("difference: " + str(round(listing.difference,2)) + "\n")
         ff.write("raw difference: £" + str(round(listing.raw_difference,2)) + "\n")
         bin_str = "Buy it Now"
-        if not buy_it_now: bin_str = "Auction"
+        if buy_it_now == True: bin_str = "Buy it now"
+        elif buy_it_now == False: bin_str = "Auction"
+        bin_str += " (" + str(listing.how_found) + ")"
         ff.write("listing type: " + bin_str + "\n")
         ff.write("-----" + "\n")
         ff.close()

@@ -13,6 +13,8 @@ class Listing:
         self.grade = None
         self.value = 0
         self.raw_difference = 0
+        self.buy_it_now = None
+        self.how_found = None
 
 class Value:
     def __init__(self):
@@ -65,10 +67,20 @@ def get_card_info(title, values, set, no_matches):
         #name_split.append(value.set)
         #print("matching:", title, name)
         match = True
+        num_match = False
+        for word in name_split:
+            if word.isnumeric():
+                search_str = word + "/"
+                search_str2 = word + " /"
+                search_str3 = "#" + word
+                search_str4 = "no" + word
+                if search_str in title or search_str2 in title or search_str3 in title or search_str4 in title:
+                    num_match = True
+                    break
         for word in name_split:
             #if "kangaskhan" in name.lower(): print("before", name, word, match)
             if word.lower == "pack": continue
-            if word.lower == "shadowless": continue
+            #if word.lower == "shadowless": continue
             if word.lower == "pokemon": continue
             if value.set in name_split:
                 if word.isnumeric() and word.lower() not in title.lower():
@@ -214,9 +226,9 @@ def get_values(url):
             if value.psa10 != None: value.psa10 *= exchange_rate
             value.name = value.set + " " + value.name
             in_range = True
-            if (value.ungraded == None or value.ungraded < 35) \
-                and (value.psa9 == None or value.psa9 < 85) \
-                and (value.psa10 == None or value.psa10 < 135):
+            if (value.ungraded == None or value.ungraded < 65) \
+                and (value.psa9 == None or value.psa9 < 145) \
+                and (value.psa10 == None or value.psa10 < 235):
                 in_range = False
             if in_range: values.append(value)
     return values
@@ -254,7 +266,7 @@ def get_listings(search_terms, values, buy_it_now, quiet, no_matches):
         secs_left = int(time_left - mins_left * 60)
         if quiet:
             if mins_left not in done_minutes:
-                print("time remaining: " + str(mins_left) + " mins " + str(secs_left) + " secs - searching: " + search_term + " listings: " + str(len(listings)))
+                print("Getting Listings - time remaining: " + str(mins_left) + " mins " + str(secs_left) + " secs - searching: " + search_term + " listings: " + str(len(listings)))
                 if i+1 >= 5: done_minutes.append(mins_left)
         else:
             print("---", search_term, i+1, "/", len(search_terms))
@@ -362,9 +374,14 @@ def get_listings(search_terms, values, buy_it_now, quiet, no_matches):
                             if value == None: continue
                         if grade == "psa9":
                             value = card_info.psa9
+                            if value == None:
+                                if card_info.ungraded != None: value = card_info.ungraded
                             if value == None: continue
                         if grade == "psa10":
                             value = card_info.psa10
+                            if value == None:
+                                if card_info.psa9 != None: value = card_info.psa9
+                                elif card_info.ungraded != None: value = card_info.ungraded
                             if value == None: continue
                         increase = price - value
                         listing.grade = grade
@@ -372,6 +389,7 @@ def get_listings(search_terms, values, buy_it_now, quiet, no_matches):
                         listing.value = value
                         listing.difference = (increase / value) * 100
                         listing.raw_difference = price - value
+                        listing.how_found = "main listings"
                         if not listing_exists(listings, listing):
                             listing_count += 1
                             listings.append(listing)
@@ -384,6 +402,155 @@ def get_listings(search_terms, values, buy_it_now, quiet, no_matches):
             #print(title, page_num, listing_count)
             #if page_num - last_found_page >= 3: break
             last_listing_count = listing_count
+    return listings
+
+def get_seller_urls(listing_urls):
+    seller_urls = []
+    done_minutes = []
+    start_time = time.time()
+    for i, url in enumerate(listing_urls):
+        done = i+1
+        time_elapsed = time.time() - start_time
+        if time_elapsed < 1: time_elapsed = 1
+        rate = done / time_elapsed
+        items_left = len(listing_urls) - i+1
+        time_left = items_left / rate
+        mins_left = int(time_left / 60)
+        secs_left = int(time_left - mins_left * 60)
+        if mins_left not in done_minutes:
+            print("Getting Seller URLS - time remaining: " + str(mins_left) + " mins " + str(secs_left) + " secs - searching: " + url.split("?")[0] + " URLS: " + str(len(seller_urls)))
+            if i+1 >= 5: done_minutes.append(mins_left)
+        page = requests.get(url)
+        page_text = page.text
+        page_split = page_text.split("\n")
+        for line in page_split:
+            #print(line)
+            match_string = "https://www.ebay.co.uk/usr"
+            if match_string in line:
+                seller = line.split(match_string)[1].split("\"")[0].split("?")[0].replace("/","")
+                seller_url = "https://www.ebay.co.uk/sch/" + seller + "/m.html?_dmd=2&_dkr=1&iconV2Request=true&_ssn=" + seller + "&_oac=1"
+                if seller_url not in seller_urls: seller_urls.append(seller_url)
+    return seller_urls
+
+def get_seller_listings(seller_urls, values, listings):
+    last_title = ""
+    first_title = ""
+    current_listing = None
+    stop_page_search = False
+    ignore_current = False
+    done_minutes = []
+    start_time = time.time()
+    title = ""
+    for i, seller_url in enumerate(seller_urls):
+        done = i+1
+        time_elapsed = time.time() - start_time
+        if time_elapsed < 1: time_elapsed = 1
+        rate = done / time_elapsed
+        items_left = len(seller_urls) - i+1
+        time_left = items_left / rate
+        mins_left = int(time_left / 60)
+        secs_left = int(time_left - mins_left * 60)
+        if mins_left not in done_minutes:
+            print("Getting Seller Listings - time remaining: " + str(mins_left) + " mins " + str(secs_left) + " secs - searching: " + seller_url.split("?")[0] + " listings: " + str(len(listings)))
+            if i+1 >= 5: done_minutes.append(mins_left)
+        first_title_set = False
+        for page_num in range(1, 10):
+            current_url = seller_url + "&_pgn=" + str(page_num)
+            page = requests.get(current_url)
+            page_text = page.text
+            #print(page_text)
+            page_split = page_text.split("\n")
+            for i, line in enumerate(page_split):
+                if current_listing != None and "class=\"bin" in line:
+                    current_listing.buy_it_now = True
+                if " class=\"vip\" title=\"" in line:
+                    title = line.split("title=\"")[1].split("\">")[1].split("</a>")[0]
+                  #  print(title)
+                    excluded = ["played", "h/p", "l/p", "heavy", "spanish", "german", "french", "not holo", "non foil",
+                                "non holo",
+                                "non 1st", "not 1st", "set art", "sticker", "non-holo", "heart gold", "soul silver",
+                                "base set 2", "etc", "sword", "xy", "platinum", "diamond and pearl", "empty",
+                                "custom", "resealed", "ex legend", "sword and shield", "black &amp; white",
+                                "shop on ebay", "korean", "portuguese", "celebrations", "anniversary", "shadowless",
+                                "sun and moon",
+                                "opened", "error", "sun &amp; moon", "sun & moon", "champions path",
+                                "champion&amp;s path", "champion's path",
+                                "fusion strike", "astral radiance", "roaring skies", "japanese"]
+                    do_continue = False
+                    ignore_current = False
+                    for term in excluded:
+                        if term in title.lower():
+                            ignore_current = True
+                    if not first_title_set:
+                        if first_title == title: stop_page_search = True
+                    url = line.split("<a href=\"")[1].split("\"")[0]
+                    current_listing = Listing()
+                    current_listing.title = title
+                    current_listing.url = url
+                    if not first_title_set:
+                        first_title = title
+                        first_title_set = True
+                if "£" in line and "</span>" in line:
+                    #print("---", line)
+                    #print("---", current_listing)
+
+                    if current_listing != None:
+                        orig_title = title
+                        title = ""
+                        if ignore_current:
+                            ignore_current = False
+                            price = line.split("£")[1].split("</span>")[0]
+                            price = price.replace("£", "").replace(",", "")
+                 #           print(price)
+                 #           print("skipping")
+                            continue
+                       # print(title)
+                        price = line.split("£")[1].split("</span>")[0]
+                        price = price.replace("£","").replace(",","")
+                        if not price.replace(".","").isnumeric():
+                            current_listing = None
+                            continue
+                        price = float(price.replace("£","").replace(",",""))
+                        current_listing.price = price
+
+                        card_info = get_card_info(current_listing.title, values, "base set", [])
+                        if card_info == None: continue
+                        if "booster box" in card_info.name.lower(): continue
+                        grade = "ungraded"
+                        if "psa 9" in orig_title.lower(): grade = "psa9"
+                        if "psa 10" in orig_title.lower(): grade = "psa10"
+                        if "?" in orig_title: grade = "ungraded"
+                        if card_info == None: continue
+                        value = None
+                        if grade == "ungraded":
+                            value = card_info.ungraded
+                            if value == None: continue
+                        if grade == "psa9":
+                            value = card_info.psa9
+                            if value == None:
+                                if card_info.ungraded != None: value = card_info.ungraded
+                            if value == None: continue
+                        if grade == "psa10":
+                            value = card_info.psa10
+                            if value == None:
+                                if card_info.psa9 != None: value = card_info.psa9
+                                elif card_info.ungraded != None: value = card_info.ungraded
+                            if value == None: continue
+                        increase = price - value
+                        current_listing.grade = grade
+                        current_listing.name = card_info.name
+                        current_listing.value = value
+                        current_listing.difference = (increase / value) * 100
+                        current_listing.raw_difference = price - value
+                        current_listing.buy_it_now = False
+                        current_listing.how_found = "seller page"
+                        if current_listing not in listings: listings.append(current_listing)
+                       # print(current_listing.title, current_listing.price, current_listing.url, current_listing.value, current_listing.name)
+                        current_listing = None
+            first_title_set = False
+            if stop_page_search:
+                stop_page_search = False
+                break
     return listings
 
 if __name__ == "__main__" :
