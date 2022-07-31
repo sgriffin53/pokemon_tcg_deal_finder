@@ -41,7 +41,7 @@ fossil Ditto #3
 jungle Snorlax #11
 
 The important thing is that you have the number with a # preceding it and the set name, so "base #4" will register as a base charizard, but "base charizard" won't.
-This shows how complete your base, jungle, and fossil sets are and also outputs a text file which shows which cards are missing from base, jungle, and fossil sets to missing.txt.
+This will show how much your collection is worth in GBP (pound sterling). It also shows how complete your base, jungle, and fossil sets are and also outputs a text file which shows which cards are missing from your base, jungle, and fossil sets to missing.txt.
 
 get_missing.py
 
