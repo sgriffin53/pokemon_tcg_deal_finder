@@ -23,16 +23,21 @@ that have appeared since the script was last run.
 Other files:
 
 constantrun.py 
+
 This is an email notification script that runs constantly and emails on new deals. To use this, you need an account with sendinblue and an API key. Add your API key and email details at the top of the file.
 
 get_value.py
+
 This is a script that can get the value of the open ebay page in the browser. If you hook this up to a shortcut with AutoHotKey, you can use the shortcut when browsing ebay to find the value of the card. It takes a few seconds to get the value.
 
 collection_value.py
+
 This is a script to assess the value of your collection. Place your collection in the file collection.txt with each card on a separate line. For example:
 
 base Charizard #4
+
 fossil Ditto #3
+
 jungle Snorlax #11
 
 The important thing is that you have the number with a # preceding it and the set name, so "base #4" will register as a base charizard, but "base charizard" won't.
