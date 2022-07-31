@@ -15,6 +15,7 @@ class Listing:
         self.raw_difference = 0
         self.buy_it_now = None
         self.how_found = None
+        self.html = ""
 
 class Value:
     def __init__(self):
@@ -53,10 +54,30 @@ def get_card_info(title, values, set, no_matches):
     title = title.replace("'", "")
     best_match = None
     best_count = -999
+    if "base" not in title.lower() and "jungle" not in title.lower() and "fossil" not in title.lower() and "rocket" not in title.lower() \
+            and "heroes" not in title.lower() and "neo" not in title.lower() and "challenge" not in title.lower() and "pokemon go" not in title.lower():
+        return None
     for value in values:
         name = value.name.replace("[", "").replace("]", "").replace("#","")
         name = name.replace("'", "")
         name = name.replace("&39;","")
+        set_size = 0
+        if "base" in value.set: set_size = 102
+        if "jungle" in value.set: set_size = 64
+        if "fossil" in value.set: set_size = 62
+        if "rocket" in value.set: set_size = 83
+        if "heroes" in value.set: set_size = 132
+        if "challenge" in value.set: set_size = 132
+        if "genesis" in value.set: set_size = 111
+        if "discovery" in value.set: set_size = 75
+        if "revelation" in value.set: set_size = 66
+        if "destiny" in value.set: set_size = 113
+        if "pokemon go" in value.set: set_size = 79
+        sets = ["base", "jungle", "fossil", "rocket", "heroes", "challenge", "genesis", "discovery", "revelation", "destiny", "pokemon go"]
+        do_continue = False
+        for set in sets:
+            if set in title.lower() and set not in value.name: do_continue = True
+        if do_continue: continue
         name_split = name.split(" ")
         num_in_name = False
         for word in name_split:
@@ -77,6 +98,7 @@ def get_card_info(title, values, set, no_matches):
                 if search_str in title or search_str2 in title or search_str3 in title or search_str4 in title:
                     num_match = True
                     break
+        do_continue = False
         for word in name_split:
             #if "kangaskhan" in name.lower(): print("before", name, word, match)
             if word.lower == "pack": continue
@@ -88,28 +110,35 @@ def get_card_info(title, values, set, no_matches):
                     if "/" in title: found_slash = True
                     if "#" in title: found_slash = True
                     if not found_slash: continue
+                if value.set not in title.lower():
+                    if word.lower() in value.set and num_match:
+                        set_match1 = "/" + str(set_size)
+                        set_match2 = "/ " + str(set_size)
+                        if set_match1 in title.lower(): continue
+                        if set_match2 in title.lower(): continue
             if word.lower() not in title.lower():
-                match = False
+                do_continue = True
+                break
             if word.isnumeric():
                 search_str = word + "/"
                 search_str2 = word + " /"
                 search_str3 = "#" + word
                 search_str4 = "no" + word
                 if search_str not in title and search_str2 not in title and search_str3 not in title and search_str4 not in title:
-                    match = False
-        if "base" not in title.lower() and "jungle" not in title.lower() and "fossil" not in title.lower() and "rocket" not in title.lower() \
-                and "heroes" not in title.lower() and "neo" not in title.lower() and "challenge" not in title.lower():
-            match = False
-            pass
+                    do_continue = True
+                    break
+        #if "pikachu" in value.name.lower(): print(title, do_continue)
+        if do_continue: continue
         if match:
             if len(name_split) > best_count:
                 best_match = value
                 best_count = len(name_split)
-    #if best_match == None:
-     #   print(title)
+    if best_match != None and best_match.set not in title.lower():
+        print(title, "::", best_match.name)
     return best_match
 
 def get_all_values(url):
+    print(url)
     exchange_rate = 0.83
     values = []
     for page_num in range(1,10):
@@ -147,6 +176,7 @@ def get_all_values(url):
             if "neo-discovery" in url: value.set = "neo discovery"
             if "neo-revelation" in url: value.set = "neo revelation"
             if "neo-destiny" in url: value.set = "neo destiny"
+            if "pokemon-go" in url: value.set = "pokemon go"
             value.name = name
             num_in_name = False
             for word in value.name.replace("#", "").split(" "):
@@ -210,6 +240,7 @@ def get_values(url):
             if "neo-discovery" in url: value.set = "neo discovery"
             if "neo-revelation" in url: value.set = "neo revelation"
             if "neo-destiny" in url: value.set = "neo destiny"
+            if "pokemon-go" in url: value.set = "pokemon go"
             value.name = name
             num_in_name = False
             for word in value.name.replace("#", "").split(" "):
@@ -357,6 +388,8 @@ def get_listings(search_terms, values, buy_it_now, quiet, no_matches):
                         if "USD" in price: continue
                         price = float(price.replace("£","").replace(",",""))
                         listing.price = price
+                        if "bids" in item: listing.buy_it_now = False
+                        else: listing.buy_it_now = True
                         card_info = get_card_info(title, values, "base set", no_matches)
                         #print(title, ":", card_info)
                         if card_info == None:
@@ -364,8 +397,8 @@ def get_listings(search_terms, values, buy_it_now, quiet, no_matches):
                             continue
                         if "booster box" in card_info.name.lower(): continue
                         grade = "ungraded"
-                        if "psa 9" in title.lower(): grade = "psa9"
-                        if "psa 10" in title.lower(): grade = "psa10"
+                        if "psa 9" in title.lower() or "psa9" in title.lower(): grade = "psa9"
+                        if "psa 10" in title.lower() or "psa10" in title.lower(): grade = "psa10"
                         if "?" in title: grade = "ungraded"
                         if card_info == None: continue
                         value = None
@@ -390,6 +423,7 @@ def get_listings(search_terms, values, buy_it_now, quiet, no_matches):
                         listing.difference = (increase / value) * 100
                         listing.raw_difference = price - value
                         listing.how_found = "main listings"
+                     #   listing.html += item
                         if not listing_exists(listings, listing):
                             listing_count += 1
                             listings.append(listing)
@@ -487,9 +521,12 @@ def get_seller_listings(seller_urls, values, listings):
                     current_listing = Listing()
                     current_listing.title = title
                     current_listing.url = url
+                    current_listing.html += line
                     if not first_title_set:
                         first_title = title
                         first_title_set = True
+                if current_listing != None:
+                    current_listing.html += line
                 if "£" in line and "</span>" in line:
                     #print("---", line)
                     #print("---", current_listing)
@@ -517,8 +554,8 @@ def get_seller_listings(seller_urls, values, listings):
                         if card_info == None: continue
                         if "booster box" in card_info.name.lower(): continue
                         grade = "ungraded"
-                        if "psa 9" in orig_title.lower(): grade = "psa9"
-                        if "psa 10" in orig_title.lower(): grade = "psa10"
+                        if "psa 9" in orig_title.lower() or "psa9" in orig_title.lower(): grade = "psa9"
+                        if "psa 10" in orig_title.lower() or "psa10" in orig_title.lower(): grade = "psa10"
                         if "?" in orig_title: grade = "ungraded"
                         if card_info == None: continue
                         value = None
@@ -542,11 +579,14 @@ def get_seller_listings(seller_urls, values, listings):
                         current_listing.value = value
                         current_listing.difference = (increase / value) * 100
                         current_listing.raw_difference = price - value
-                        current_listing.buy_it_now = False
+                        current_listing.buy_it_now = True
                         current_listing.how_found = "seller page"
                         if current_listing not in listings: listings.append(current_listing)
                        # print(current_listing.title, current_listing.price, current_listing.url, current_listing.value, current_listing.name)
-                        current_listing = None
+                if "bid" in line.lower() and current_listing != None:
+                    listings[len(listings) - 1].buy_it_now = False
+                    current_listing.buy_it_now = False
+                    current_listing = None
             first_title_set = False
             if stop_page_search:
                 stop_page_search = False
