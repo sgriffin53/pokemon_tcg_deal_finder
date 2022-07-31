@@ -52,7 +52,7 @@ def get_value(value):
         text = page.text.split("<td id=\"complete_price\">")[1]
         psa7_price = text.split("</span")[0].split(">")[1].strip().replace("\n","").replace("$", "")
         psa7_price = psa7_price.replace(",","")
-        if psa7_price == "N/A": psa7_price = 0
+        if psa7_price == "N/A": psa7_price = "0"
         psa7_price = float(psa7_price)
         psa7_price *= exchange_rate
         psa7_price = round(psa7_price,2)
@@ -60,7 +60,7 @@ def get_value(value):
         text = page.text.split("<td id=\"new_price\">")[1]
         psa8_price = text.split("</span")[0].split(">")[1].strip().replace("\n","").replace("$", "")
         psa8_price = psa8_price.replace(",","")
-        if psa8_price == "N/A": psa8_price = 0
+        if psa8_price == "N/A": psa8_price = "0"
         psa8_price = float(psa8_price)
         psa8_price *= exchange_rate
         psa8_price = round(psa8_price,2)
@@ -68,14 +68,14 @@ def get_value(value):
         text = page.text.split("<td id=\"graded_price\" class=\"tablet-portrait-hidden\">")[1]
         psa9_price = text.split("</span")[0].split(">")[1].strip().replace("\n","").replace("$", "")
         psa9_price = psa9_price.replace(",","")
-        if psa9_price == "N/A": psa9_price = 0
+        if psa9_price == "N/A": psa9_price = "0"
         psa9_price = float(psa9_price)
         psa9_price *= exchange_rate
         psa9_price = round(psa9_price,2)
         print("PSA 9: £" + str(psa9_price))
         text = page.text.split("<td id=\"manual_only_price\" class=\"tablet-portrait-hidden\">")[1]
         psa10_price = text.split("</span")[0].split(">")[1].strip().replace("\n","").replace("$", "")
-        if psa10_price == "N/A": psa10_price = 0
+        if psa10_price == "N/A": psa10_price = "0"
         psa10_price = float(psa10_price.replace(",",""))
         psa10_price *= exchange_rate
         psa10_price = round(psa10_price,2)
