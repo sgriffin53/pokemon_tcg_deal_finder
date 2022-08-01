@@ -1,5 +1,7 @@
 Python script for finding good deals on pokemon cards on ebay.
 
+WARNING: THIS SCRIPT MIGHT GET YOU BLACKLISTED FROM EBAY'S PAYMENT PORTAL - When I first ran this script, I tried to buy a card afterwards and got an access denied error on eBay's payment portal. I've since been using a VPN to get through to the payment portal. After about a week of not using the script, I was able to access the payment portal without a VPN. I ran the script again and started getting the access denied error on the payment portal. This script isn't against eBay's TOS, but if you use it, it seems you'll automatically get temporarily blacklisted from their payment portal. Use this script at your own risk.
+
 It checks pricecharting.com for the values of the top 50 most expensive base, jungle, and fossil cards, then searches for those cards on eBay. It outputs to a file out.txt
 with the listings that matched known cards, with details such as price, grading, price difference (raw and percentage), etc. The output is ordered by the raw difference between
 price and value in the listing, so the best deals will be at the top.
