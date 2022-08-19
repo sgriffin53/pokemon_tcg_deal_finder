@@ -55,7 +55,11 @@ def get_card_info(title, values, set, no_matches):
     best_match = None
     best_count = -999
     if "base" not in title.lower() and "jungle" not in title.lower() and "fossil" not in title.lower() and "rocket" not in title.lower() \
-            and "heroes" not in title.lower() and "neo" not in title.lower() and "challenge" not in title.lower() and "pokemon go" not in title.lower():
+            and "heroes" not in title.lower() and "neo" not in title.lower() and "challenge" not in title.lower() and "pokemon go" not in title.lower()\
+            and "evolving skies" not in title.lower() and "shining fates" not in title.lower() and "brilliant stars" not in title.lower()\
+            and "fusion strike" not in title.lower() and "chilling reign" not in title.lower() and "vivid voltage" not in title.lower()\
+            and "hidden fates" not in title.lower() and "darkness ablaze" not in title.lower() and "rebel clash" not in title.lower()\
+            and "astral radiance" not in title.lower() and "celebrations" not in title.lower() and "burning shadows" not in title.lower():
         return None
     for value in values:
         name = value.name.replace("[", "").replace("]", "").replace("#","")
@@ -73,7 +77,9 @@ def get_card_info(title, values, set, no_matches):
         if "revelation" in value.set: set_size = 66
         if "destiny" in value.set: set_size = 113
         if "pokemon go" in value.set: set_size = 79
-        sets = ["base", "jungle", "fossil", "rocket", "heroes", "challenge", "genesis", "discovery", "revelation", "destiny", "pokemon go"]
+        sets = ["base", "jungle", "fossil", "rocket", "heroes", "challenge", "genesis", "discovery", "revelation", "destiny", "pokemon go", "evolving skies"\
+                "shining fates", "brilliant stars", "fusion strike", "chilling reign", "vivid voltage", "hidden fates", "darkness ablaze", "rebel clash",\
+                "astral radiance", "celebrations", "burning shadows"]
         do_continue = False
         for set in sets:
             if set in title.lower() and set not in value.name: do_continue = True
@@ -100,7 +106,6 @@ def get_card_info(title, values, set, no_matches):
                     break
         do_continue = False
         for word in name_split:
-            #if "kangaskhan" in name.lower(): print("before", name, word, match)
             if word.lower == "pack": continue
             #if word.lower == "shadowless": continue
             if word.lower == "pokemon": continue
@@ -177,6 +182,18 @@ def get_all_values(url):
             if "neo-revelation" in url: value.set = "neo revelation"
             if "neo-destiny" in url: value.set = "neo destiny"
             if "pokemon-go" in url: value.set = "pokemon go"
+            if "evolving-skies" in url: value.set = "evolving skies"
+            if "shining-fates" in url: value.set = "shining fates"
+            if "brilliant-stars" in url: value.set = "brilliant stars"
+            if "fusion-strike" in url: value.set = "fusion strike"
+            if "chilling-reign" in url: value.set = "chilling reign"
+            if "vivid-voltage" in url: value.set = "vivid voltage"
+            if "hidden-fates" in url: value.set = "hidden fates"
+            if "darkness-ablaze" in url: value.set = "darkness ablaze"
+            if "rebel-clash" in url: value.set = "rebel clash"
+            if "astral-radiance" in url: value.set = "astral radiance"
+            if "celebrations" in url: value.set = "celebrations"
+            if "burning-shadows" in url: value.set = "burning shadows"
             value.name = name
             num_in_name = False
             for word in value.name.replace("#", "").split(" "):
@@ -241,6 +258,18 @@ def get_values(url):
             if "neo-revelation" in url: value.set = "neo revelation"
             if "neo-destiny" in url: value.set = "neo destiny"
             if "pokemon-go" in url: value.set = "pokemon go"
+            if "evolving-skies" in url: value.set = "evolving skies"
+            if "shining-fates" in url: value.set = "shining fates"
+            if "brilliant-stars" in url: value.set = "brilliant stars"
+            if "fusion-strike" in url: value.set = "fusion strike"
+            if "chilling-reign" in url: value.set = "chilling reign"
+            if "vivid-voltage" in url: value.set = "vivid voltage"
+            if "hidden-fates" in url: value.set = "hidden fates"
+            if "darkness-ablaze" in url: value.set = "darkness ablaze"
+            if "rebel-clash" in url: value.set = "rebel clash"
+            if "astral-radiance" in url: value.set = "astral radiance"
+            if "celebrations" in url: value.set = "celebrations"
+            if "burning-shadows" in url: value.set = "burning shadows"
             value.name = name
             num_in_name = False
             for word in value.name.replace("#", "").split(" "):
