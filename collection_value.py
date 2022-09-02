@@ -5,6 +5,13 @@ from main import Value
 from main import get_all_values
 import sys
 import os
+from tqdm import tqdm
+
+def topCardsSortFunc(card):
+    return card.value
+
+def gradedCardsSortFunc(card):
+    return card[2] - card[1]
 
 def sortFunc(valueObj):
     name = valueObj.name
@@ -50,7 +57,11 @@ if __name__ == "__main__" :
                 "https://www.pricecharting.com/console/pokemon-rebel-clash?sort=highest-price",
                 "https://www.pricecharting.com/console/pokemon-astral-radiance?sort=highest-price",
                 "https://www.pricecharting.com/console/pokemon-celebrations?sort=highest-price",
-                "https://www.pricecharting.com/console/pokemon-burning-shadows?sort=highest-price"]
+                "https://www.pricecharting.com/console/pokemon-burning-shadows?sort=highest-price",
+                "https://www.pricecharting.com/console/pokemon-unified-minds?sort=highest-price",
+                "https://www.pricecharting.com/console/pokemon-breakpoint?sort=highest-price",
+                "https://www.pricecharting.com/console/pokemon-shining-legends?sort=highest-price",
+                "https://www.pricecharting.com/console/pokemon-battle-styles?sort=highest-price"]
             #    "https://www.pricecharting.com/console/pokemon-team-rocket?sort=highest-price",
             #    "https://www.pricecharting.com/console/pokemon-gym-heroes?sort=highest-price",
               #  "https://www.pricecharting.com/console/pokemon-neo-genesis?sort=highest-price"]
@@ -65,7 +76,7 @@ if __name__ == "__main__" :
                 'fossil': [],
                 'neo genesis': [],
                 'pokemon go': []}
-    for set_url in set_urls:
+    for set_url in tqdm(set_urls):
         values = get_all_values(set_url)
         for value in values:
             all_values.append(value)
@@ -95,22 +106,34 @@ if __name__ == "__main__" :
     my_card_names = []
     ff = None
     lines = []
+    collection_dict = {}
     if not all_files:
         ff = open('collection.txt')
         lines = ff.readlines()
         ff.close()
     if all_files:
-        files = ['collections/vintage.txt', 'collections/biggie_hits.txt', 'collections/wiidevil.txt']
+        i = -1
+        #files = ['collections/vintage.txt', 'collections/biggie_hits.txt', 'collections/wiidevil.txt',
+         #        'collections/timz_bag.txt', 'collections/target.txt', 'collections/timz_box.txt',
+          #       'collections/personal.txt']
+        files = ['collections/biggie_hits.txt', 'collections/wiidevil.txt',
+                 'collections/timz_bag.txt', 'collections/target.txt', 'collections/timz_box.txt',
+                 'collections/personal.txt']
+      #  files = ['collections/vintage.txt']
         for filename in files:
             ff = open(filename, 'r')
+            short_filename = filename.replace("collections/", "")
             readlines = ff.readlines()
             for line in readlines:
+                i+=1
+                collection_dict[i] = short_filename
                 lines.append(line)
             ff.close()
     unmatched_count = 0
     total_value = 0
     get_graded = []
-    for line in lines:
+    all_cards = []
+    for i, line in enumerate(lines):
         quantity = 1
         for word in line.split(" "):
             if word[0] == "x" and word == line.split(" ")[len(line.split(" ")) - 1]:
@@ -121,19 +144,29 @@ if __name__ == "__main__" :
             unmatched_count += 1
             print(" --- couldn't find", line)
             continue
+        card_info.collection = collection_dict[i]
         value = card_info.ungraded
         if "psa 9" in line and card_info.psa9 != None: value = card_info.psa9
         if "psa 10" in line and card_info.psa10 != None: value = card_info.psa10
         if card_info.psa10 != None:
             if card_info.psa10 - card_info.ungraded >= 100:
-                get_graded.append((card_info.name, card_info.ungraded, card_info.psa10))
+               # print(card_info.name)
+                if "base" not in card_info.name and "jungle" not in card_info.name and "fossil" not in card_info.name and "team rocket" not in card_info.name:
+                    for i in range(quantity):
+                        get_graded.append((card_info.name, card_info.ungraded, card_info.psa10, card_info.collection))
+                else:
+                    if "gengar" in card_info.name.lower(): # add exception for gengar
+                        get_graded.append((card_info.name, card_info.ungraded, card_info.psa10, card_info.collection))
         my_card_names.append(card_info.name)
         value = round(value,2)
-        print(card_info.name, "£" + str(value * quantity))
+        #print(card_info.name, "£" + str(value * quantity))
+        orig_value = value
         value *= quantity
         total_value += value
+        for i in range(quantity):
+            card_info.value = orig_value
+            all_cards.append(card_info)
     print("Total value: £" + str(total_value))
-
     ff = open('missing.txt', 'w', encoding='utf-8')
     sets = ['base', 'jungle', 'fossil']
     do_sets = False
@@ -156,14 +189,37 @@ if __name__ == "__main__" :
                 percentage = 0
             else: percentage = round(owned * 100 / len(set_cards),0)
             print(set, str(owned) + " / " + str(len(set_cards)) + " (" + str(percentage) + "%)")
-    grading = False
+    grading = True
     if grading:
         print("Get graded:")
         max_return = 0
-        for card in get_graded:
-            print(card[0], "£" + str(card[1]), "£" + str(card[2]))
+        get_graded.sort(key=gradedCardsSortFunc, reverse=True)
+        top_count = 30
+        if top_count > len(get_graded): top_count = len(get_graded)
+        for i in range(top_count):
+            card = get_graded[i]
+            print(get_graded[i][0], "ungraded: £" + str(get_graded[i][1]), "( psa 10: " + str(get_graded[i][2]) + ") (" + str(get_graded[i][3]) + ")")
+        #print(card[0], "£" + str(card[1]), "£" + str(card[2]))
             max_return += card[2] - card[1]
         print("Max return: £" + str(max_return))
         print("Return after grading costs: £" + str(max_return - (len(get_graded) * 50)))
+    do_top = True
+    top_mode = "top"
+    if do_top:
+        top_count = 20
+        if top_count > len(all_cards): top_count = len(all_cards)
+        sort_reverse = True
+        if top_mode == "bottom": sort_reverse = False
+        all_cards.sort(key=topCardsSortFunc, reverse=sort_reverse)
+        print("")
+        print(top_mode.capitalize() + " " + str(top_count) + " cards by value:")
+        top_cards_value = 0
+        for i in range(top_count):
+            print(all_cards[i].name, "£" + str(all_cards[i].value), "( psa 10: " + str(all_cards[i].psa10) + ") (" + str(all_cards[i].collection) + ")")
+            top_cards_value += all_cards[i].value
+        print("Value of " + top_mode + " " + str(top_count) + ": £" + str(top_cards_value))
+    print(len(all_cards),"cards")
+    if do_sets or do_top or grading:
+        print("Total value: £" + str(total_value))
     ff.close()
     sys.exit()
